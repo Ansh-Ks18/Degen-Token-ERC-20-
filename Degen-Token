@@ -1,0 +1,61 @@
+/*
+1. Minting new tokens: The platform should be able to create new tokens and distribute them to players as 2. rewards. Only the owner can mint tokens.
+3. Transferring tokens: Players should be able to transfer their tokens to others.
+4. Redeeming tokens: Players should be able to redeem their tokens for items in the in-game store.
+5. Checking token balance: Players should be able to check their token balance at any time.
+6. Burning tokens: Anyone should be able to burn tokens, that they own, that are no longer needed.
+*/
+
+//Code implementation
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.18;
+
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract DegenToken is ERC20, Ownable {
+    uint256 public constant ITEM_COST = 100; // Cost of one item in tokens
+    mapping(address => uint256) public itemsRedeemed;
+
+    constructor() ERC20("DegenToken", "DGN") Ownable(msg.sender) {
+        _mint(msg.sender, 10 * (10 ** uint256(decimals()))); // Initial supply for the owner
+    }
+
+    // Redeem tokens for in-game items
+    function redeemItem(uint256 quantity) public {
+        uint256 totalCost = ITEM_COST * quantity;
+        require(balanceOf(msg.sender) >= totalCost, "Insufficient tokens for redemption");
+
+        itemsRedeemed[msg.sender] += quantity;
+        _burn(msg.sender, totalCost);
+    }
+
+    // Check the number of items redeemed by a user
+    function checkItemsRedeemed(address user) public view returns (uint256) {
+        return itemsRedeemed[user];
+    }
+
+    // Owner can create (mint) more tokens
+    function createTokens(address recipient, uint256 amount) public onlyOwner {
+        _mint(recipient, amount);
+    }
+
+    // Check the token balance of an account
+    function checkTokenBalance(address account) public view returns (uint256) {
+        return balanceOf(account);
+    }
+
+    // Burn tokens (destroy them) from the caller's balance
+    function burnTokens(uint256 amount) public {
+        require(balanceOf(msg.sender) >= amount, "Insufficient tokens for burning");
+        _burn(msg.sender, amount);
+    }
+
+    // Transfer tokens to another account
+    function sendTokens(address recipient, uint256 amount) public {
+        require(recipient != address(0), "Invalid recipient address");
+        require(balanceOf(msg.sender) >= amount, "Insufficient tokens for transfer");
+        _transfer(msg.sender, recipient, amount);
+    }
+}
