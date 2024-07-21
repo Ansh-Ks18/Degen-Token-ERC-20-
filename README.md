@@ -51,6 +51,7 @@ Once you have written and deployed the smart contract, test it thoroughly to ens
 3. **Paste the Solidity Code**:
 
 ```solidity
+
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.18;
 
@@ -58,16 +59,30 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract DegenToken is ERC20, Ownable {
-    uint256 public constant ITEM_COST = 100; // Cost of one item in tokens
+    struct Item {
+        string name;        
+        uint256 cost;       
+    }
+
+    mapping(string => Item) public items;   
+
     mapping(address => uint256) public itemsRedeemed;
 
-    constructor() ERC20("Degen", "DGN") Ownable() {
+    constructor() ERC20("DegenToken", "DGN") Ownable(msg.sender) {
         _mint(msg.sender, 10 * (10 ** uint256(decimals()))); // Initial supply for the owner
     }
 
-    // Redeem tokens for in-game items
-    function redeemItem(uint256 quantity) public {
-        uint256 totalCost = ITEM_COST * quantity;
+    // Add an item to the store with a specific name and cost in tokens
+    function addItem(string memory itemName, uint256 itemCost) external onlyOwner {
+        items[itemName] = Item(itemName, itemCost);
+    }
+
+    // Redeem an item by specifying its name and quantity
+    function redeemItem(string memory itemName, uint256 quantity) public {
+        Item storage item = items[itemName];
+        require(item.cost > 0, "Item does not exist or cost is not set");
+        
+        uint256 totalCost = item.cost * quantity;
         require(balanceOf(msg.sender) >= totalCost, "Insufficient tokens for redemption");
 
         itemsRedeemed[msg.sender] += quantity;
@@ -102,6 +117,8 @@ contract DegenToken is ERC20, Ownable {
         _transfer(msg.sender, recipient, amount);
     }
 }
+
+
 ```
 
 ### Step 2: Compile the Contract
